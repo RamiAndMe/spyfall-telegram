@@ -15,12 +15,15 @@ from pprint import pprint
 bot = TBot(<Insert your bot token here>)
 bot.get_updates() # Clear Updates
 
-# Read CSV
-location_roles_csv = pd.read_csv('Spyfall_LocationRoles.csv').loc[:, 'Airplane':'Passenger Train']
-location_roles = {location: location_roles_csv[location].dropna().tolist() for location in location_roles_csv.columns}
+# Locations & roles from CSV
+def read_location_roles():
+    location_roles_csv = pd.read_csv('Spyfall_LocationRoles.csv').loc[:, 'Airplane':'Passenger Train']
+    location_roles = {location: location_roles_csv[location].dropna().tolist() for location in location_roles_csv.columns}
+    return location_roles
 
 game_rooms = {}
 player_names = {}   # player_id: player_name
+location_roles = read_location_roles()
 
 # What's inside location_roles?
 # Location Roles stores location and the roles available for that locatin
@@ -61,7 +64,7 @@ player_names = {}   # player_id: player_name
 #              'players': [781520638, ...],
 #              'roles': ['Spy', ...]}}
 
-# A user wants to create a game
+# TODO: A user wants to create a game
 def create_new_game(user_id, duration):
     # Use the user_id as the room_id
 
@@ -75,7 +78,7 @@ def create_new_game(user_id, duration):
     # so his/her friends can join!
 
 
-# A user enters the room_id and wants to join the game
+# TODO: A user enters the room_id and wants to join the game
 def join_game(user_id, room_id):
     # What if the room does not exist?
     # We need to tell the user and stop the code now
@@ -95,7 +98,7 @@ def join_game(user_id, room_id):
     # Tell the user that he/she has been added!
 
 
-# Game Leader wants to start the game
+# TODO: Game Leader wants to start the game
 def start_game(user_id):
     # Remember that room_id == user_id
     # Create variable "room_id"
@@ -145,10 +148,16 @@ def start_game(user_id):
 # When the game duration ends
 def check_timeout():
     # Loop through each game room
-        # And check if game ending time is less than the time now
+    # And check if game ending time is less than the time now
         # Cus that means that the ending time has arrived
     # Tell the players that their time is up
-
+    for game_room in game_rooms.values():
+        ending_time = game_room['end']
+        if ending_time and ending_time < time.time():
+            players = game_room['players']
+            for user_id in players:
+                bot.send_message(user_id, 'Time\'s Up! Vote for the Spy!')
+            game_room['end'] += 5 * 60  # Give User 5 mins to vote
 
     # Some questions to ponder:
     # 1. But wait, have you check what's the initial value of the ending time?
@@ -159,7 +168,8 @@ def check_timeout():
     # Check that you have extended the ending time
     # So that the players will have time to vote (5 mins preferable?)
 
-# User wants to end the game and reveal the results
+
+# TODO: User wants to end the game and reveal the results
 def end_game(user_id):
     # Remember room_id == user_id
 
@@ -204,18 +214,14 @@ while True:
     # Checks Game Timeout
     check_timeout()
 
-    # Get Updates
-    updates = bot.get_updates()
+    # TODO: Get Updates from bot
 
     # Loop Through each update
     for update in updates:
         # Checks if it's a message because
         # Telegram supports others like 'edited messages', 'poll', etc...
-        if update.get('message'):
-            message = update['message']
-            text = message['text']
-            parse = text.split() # String: '/newgame 10' --> List: ['/newgame', '10']
-            chat_id = message['chat']['id']
+        if "message" in update:
+            # TODO: extract chat id and words from message (parse)
 
             # Check for Newcomers
             check_newcomer(chat_id)
@@ -234,15 +240,6 @@ while True:
 
                 duration = int(parse[1])
                 create_new_game(chat_id, duration)
-
-            elif parse[0] == '/join':
-                room_id = parse[1]
-                join_game(chat_id, room_id)
-
-            elif parse[0] == '/start':
-                start_game(chat_id)
-
-            elif parse[0] == '/end':
-                end_game(chat_id)
-
+        # TODO: hook up /join, /start, /end game commands
+     
         pprint(game_rooms)
